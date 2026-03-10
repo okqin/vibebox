@@ -643,6 +643,27 @@ auto_shutdown_ms = 12345
         };
         let err = validate_config(&cfg).expect_err("invalid mount should fail");
         assert!(err.starts_with("invalid mount spec"));
+
+        let temp = TempDir::new().expect("temp dir should be created");
+        let file_mount = temp.path().join("not-a-directory.txt");
+        fs::write(&file_mount, "content").expect("file mount should be created");
+        let cfg = Config {
+            box_cfg: BoxConfig {
+                cpu_count: 2,
+                ram_size: ByteSize::mib(2048),
+                disk_size: ByteSize::gib(5),
+                mounts: vec![format!(
+                    "{}:/tmp/file-mount:read-write",
+                    file_mount.display()
+                )],
+            },
+            supervisor: SupervisorConfig::default(),
+        };
+        let err = validate_config(&cfg).expect_err("file mount should fail");
+        assert!(
+            err.contains("host path must be a directory"),
+            "expected directory validation error, got: {err}"
+        );
     }
 
     #[test]

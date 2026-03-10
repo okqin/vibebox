@@ -74,6 +74,12 @@ impl DirectoryShare {
         if !host.exists() {
             bail!(format!("host path does not exist: {}", host.display()));
         }
+        if !host.is_dir() {
+            bail!(format!(
+                "host path must be a directory, not a file: {}",
+                host.display()
+            ));
+        }
         if !guest.is_absolute() {
             guest = PathBuf::from("/root").join(guest);
         }
