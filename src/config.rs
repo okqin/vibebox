@@ -646,6 +646,32 @@ auto_shutdown_ms = 12345
     }
 
     #[test]
+    fn validate_config_rejects_file_mounts() {
+        let temp = TempDir::new().expect("temp dir should be created");
+        let file_path = temp.path().join("not-a-directory.txt");
+        fs::write(&file_path, "hello").expect("file should be created");
+
+        let cfg = Config {
+            box_cfg: BoxConfig {
+                cpu_count: 2,
+                ram_size: ByteSize::mib(2048),
+                disk_size: ByteSize::gib(5),
+                mounts: vec![format!(
+                    "{}:/tmp/not-a-directory:read-write",
+                    file_path.display()
+                )],
+            },
+            supervisor: SupervisorConfig::default(),
+        };
+
+        let err = validate_config(&cfg).expect_err("file mount should fail");
+        assert!(
+            err.contains("host path is not a directory"),
+            "expected directory error, got: {err}"
+        );
+    }
+
+    #[test]
     fn resolve_config_path_accepts_symlinked_project_root() {
         let temp = TempDir::new().expect("temp dir should be created");
         let actual_root = temp.path().join("actual");
